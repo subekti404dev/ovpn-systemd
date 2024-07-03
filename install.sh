@@ -41,7 +41,8 @@ add_alias_to_rc() {
     local alias_file="$HOME/$SHELL_RC"
     echo "alias startvpn='sudo systemctl start openvpn-client@client'" >> "$alias_file"
     echo "alias stopvpn='sudo systemctl stop openvpn-client@client'" >> "$alias_file"
-    echo "Aliases 'startvpn' and 'stopvpn' added to $SHELL_RC."
+    echo "alias statusvpn='sudo systemctl status openvpn-client@client'" >> "$alias_file"
+    echo "Aliases 'startvpn', 'statusvpn' and 'stopvpn' added to $SHELL_RC."
     echo "Run 'source $SHELL_RC' to apply the changes."
 }
 
