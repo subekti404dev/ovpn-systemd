@@ -10,13 +10,10 @@ else
 fi
 
 # Define variables
-HOME_DIR="$HOME/openvpn"
 CONFIG_DIR="/etc/openvpn"
+HOME_DIR="$HOME/openvpn"
 SERVICE_FILE="/etc/systemd/system/openvpn-client@.service"
-UPDATE_DNS_SCRIPT="${CONFIG_DIR}/update-dns.sh"
-RESTORE_DNS_SCRIPT="${CONFIG_DIR}/restore-dns.sh"
-CLIENT_CONFIG="${HOME_DIR}/client.conf"
-OVPN_CONFIG="${HOME_DIR}/client.ovpn"
+BASHRC_FILE="$HOME/.bashrc"
 
 # Function to install packages and setup for Debian-based systems
 install_debian() {
@@ -28,6 +25,13 @@ install_debian() {
 install_arch() {
     sudo pacman -Syu --noconfirm
     sudo pacman -S --noconfirm openvpn openresolv
+}
+
+# Function to add alias to .bashrc
+add_alias_to_bashrc() {
+    echo "alias startvpn='sudo systemctl start openvpn-client@client'" >> "${BASHRC_FILE}"
+    echo "Alias 'startvpn' added to ~/.bashrc."
+    echo "Run 'source ~/.bashrc' to apply the changes."
 }
 
 # Install necessary packages based on the distribution
@@ -51,24 +55,24 @@ mkdir -p "${HOME_DIR}"
 sudo mkdir -p "${CONFIG_DIR}"
 
 # Create OpenVPN configuration file placeholder (replace with actual .ovpn content)
-touch "${OVPN_CONFIG}"
-echo "Place your OpenVPN configuration file at ${OVPN_CONFIG}"
+touch "${HOME_DIR}/client.ovpn"
+echo "Place your OpenVPN configuration file at ${HOME_DIR}/client.ovpn"
 
 # Create the client configuration file
-cat > "${CLIENT_CONFIG}" <<EOF
+cat > "${HOME_DIR}/client.conf" <<EOF
 # OpenVPN configuration
-OVPN_CONFIG="${OVPN_CONFIG}"
+OVPN_CONFIG="${HOME_DIR}/client.ovpn"
 
 # DNS settings
 DNS_SERVERS="8.8.8.8 8.8.4.4"
 EOF
 
 # Create the update DNS script
-sudo bash -c "cat > ${UPDATE_DNS_SCRIPT}" <<EOF
+sudo bash -c "cat > ${CONFIG_DIR}/update-dns.sh" <<EOF
 #!/bin/bash
 
 # Source the configuration file
-. ${CLIENT_CONFIG}
+. ${HOME_DIR}/client.conf
 
 # Backup the original resolv.conf if it doesn't exist
 if [ ! -f /etc/resolv.conf.backup ]; then
@@ -80,14 +84,14 @@ echo -e "nameserver \$DNS_SERVERS" > /etc/resolv.conf
 EOF
 
 # Make the update DNS script executable
-sudo chmod +x "${UPDATE_DNS_SCRIPT}"
+sudo chmod +x "${CONFIG_DIR}/update-dns.sh"
 
 # Create the restore DNS script
-sudo bash -c "cat > ${RESTORE_DNS_SCRIPT}" <<EOF
+sudo bash -c "cat > ${CONFIG_DIR}/restore-dns.sh" <<EOF
 #!/bin/bash
 
 # Source the configuration file
-. ${CLIENT_CONFIG}
+. ${HOME_DIR}/client.conf
 
 # Restore the original resolv.conf if the backup exists
 if [ -f /etc/resolv.conf.backup ]; then
@@ -96,7 +100,7 @@ fi
 EOF
 
 # Make the restore DNS script executable
-sudo chmod +x "${RESTORE_DNS_SCRIPT}"
+sudo chmod +x "${CONFIG_DIR}/restore-dns.sh"
 
 # Create the systemd service file
 sudo bash -c "cat > ${SERVICE_FILE}" <<EOF
@@ -107,10 +111,10 @@ After=network-online.target
 
 [Service]
 Type=simple
-EnvironmentFile=${CLIENT_CONFIG}
+EnvironmentFile=${HOME_DIR}/client.conf
 ExecStart=/usr/sbin/openvpn --config \$OVPN_CONFIG
-ExecStartPost=${UPDATE_DNS_SCRIPT}
-ExecStopPost=${RESTORE_DNS_SCRIPT}
+ExecStartPost=${CONFIG_DIR}/update-dns.sh
+ExecStopPost=${CONFIG_DIR}/restore-dns.sh
 Restart=on-failure
 RestartSec=10
 
@@ -122,8 +126,11 @@ EOF
 sudo systemctl daemon-reload
 
 # Enable and start the OpenVPN service (replace 'client' with your actual config name if different)
-sudo systemctl enable openvpn-client@client
-sudo systemctl start openvpn-client@client
+# sudo systemctl enable openvpn-client@client
+# sudo systemctl start openvpn-client@client
+
+# Add alias to .bashrc
+add_alias_to_bashrc
 
 # Display status
-sudo systemctl status openvpn-client@client
+# sudo systemctl status openvpn-client@client
