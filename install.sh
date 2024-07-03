@@ -111,7 +111,6 @@ if [ -f /etc/resolv.conf.backup ]; then
 fi
 EOF
 
-
 # Make the restore DNS script executable
 sudo chmod +x "${CONFIG_DIR}/restore-dns.sh"
 
