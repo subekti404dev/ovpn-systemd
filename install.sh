@@ -111,9 +111,6 @@ if [ -f /etc/resolv.conf.backup ]; then
 fi
 EOF
 
-# Make the check VPN status script executable
-sudo chmod +x /etc/openvpn/check-vpn-status.sh
-
 
 # Make the restore DNS script executable
 sudo chmod +x "${CONFIG_DIR}/restore-dns.sh"
