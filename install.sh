@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# Detect the shell type
+if [ -n "$BASH_VERSION" ]; then
+    SHELL_RC=".bashrc"
+elif [ -n "$ZSH_VERSION" ]; then
+    SHELL_RC=".zshrc"
+else
+    echo "Unsupported shell. Please use Bash or Zsh."
+    exit 1
+fi
+
 # Detect the distribution
 if [ -f /etc/os-release ]; then
     . /etc/os-release
@@ -13,7 +23,6 @@ fi
 CONFIG_DIR="/etc/openvpn"
 HOME_DIR="$HOME/openvpn"
 SERVICE_FILE="/etc/systemd/system/openvpn-client@.service"
-BASHRC_FILE="$HOME/.bashrc"
 
 # Function to install packages and setup for Debian-based systems
 install_debian() {
@@ -27,11 +36,13 @@ install_arch() {
     sudo pacman -S --noconfirm openvpn openresolv
 }
 
-# Function to add alias to .bashrc
-add_alias_to_bashrc() {
-    echo "alias startvpn='sudo systemctl start openvpn-client@client'" >> "${BASHRC_FILE}"
-    echo "Alias 'startvpn' added to ~/.bashrc."
-    echo "Run 'source ~/.bashrc' to apply the changes."
+# Function to add alias to shell rc file
+add_alias_to_rc() {
+    local alias_file="$HOME/$SHELL_RC"
+    echo "alias startvpn='sudo systemctl start openvpn-client@client'" >> "$alias_file"
+    echo "alias stopvpn='sudo systemctl stop openvpn-client@client'" >> "$alias_file"
+    echo "Aliases 'startvpn' and 'stopvpn' added to $SHELL_RC."
+    echo "Run 'source $SHELL_RC' to apply the changes."
 }
 
 # Install necessary packages based on the distribution
@@ -129,8 +140,10 @@ sudo systemctl daemon-reload
 # sudo systemctl enable openvpn-client@client
 # sudo systemctl start openvpn-client@client
 
-# Add alias to .bashrc
-add_alias_to_bashrc
+# Add aliases to shell rc file if it exists
+if [ -f "$HOME/$SHELL_RC" ]; then
+    add_alias_to_rc
+fi
 
 # Display status
 # sudo systemctl status openvpn-client@client
