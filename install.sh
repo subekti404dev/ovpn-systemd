@@ -118,7 +118,8 @@ sudo bash -c "cat >  ${CONFIG_DIR}/check-vpn-status.sh" <<EOF
 
 # Function to check OpenVPN status and write to file
 check_vpn_status() {
-    if systemctl is-active --quiet openvpn-client@client ; then
+    status=\$(systemctl is-active openvpn-client@client)
+    if [ "\$status" == "active" ]; then
         echo "active" > /etc/openvpn/vpn_status.txt
     else
         echo "inactive" > /etc/openvpn/vpn_status.txt
