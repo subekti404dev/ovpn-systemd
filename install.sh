@@ -41,7 +41,7 @@ add_alias_to_rc() {
     local alias_file="$HOME/$SHELL_RC"
     echo "alias startvpn='sudo systemctl start openvpn-client@client'" >> "$alias_file"
     echo "alias stopvpn='sudo systemctl stop openvpn-client@client'" >> "$alias_file"
-    echo "alias statusvpn='sudo systemctl status openvpn-client@client'" >> "$alias_file"
+    echo "alias statusvpn='sudo bash /etc/openvpn/check-vpn-status.sh'" >> "$alias_file"
     echo "Aliases 'startvpn', 'statusvpn' and 'stopvpn' added to $SHELL_RC."
     echo "Run 'source $SHELL_RC' to apply the changes."
 }
@@ -110,6 +110,28 @@ if [ -f /etc/resolv.conf.backup ]; then
     mv /etc/resolv.conf.backup /etc/resolv.conf
 fi
 EOF
+
+
+# Create the check VPN status script
+sudo bash -c "cat >  ${CONFIG_DIR}/check-vpn-status.sh" <<EOF
+#!/bin/bash
+
+# Function to check OpenVPN status and write to file
+check_vpn_status() {
+    if systemctl is-active --quiet openvpn-client@client ; then
+        echo "active" > /etc/openvpn/vpn_status.txt
+    else
+        echo "inactive" > /etc/openvpn/vpn_status.txt
+    fi
+}
+
+# Call the function to check VPN status
+check_vpn_status
+EOF
+
+# Make the check VPN status script executable
+sudo chmod +x /etc/openvpn/check-vpn-status.sh
+
 
 # Make the restore DNS script executable
 sudo chmod +x "${CONFIG_DIR}/restore-dns.sh"
